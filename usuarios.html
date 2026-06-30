@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel ADM - Gerenciamento</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        body {
+            background-color: #090a10;
+            color: #ffffff;
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 2.5fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .adm-card {
+            background-color: #161925;
+            border: 1px solid #23293e;
+            border-radius: 12px;
+            padding: 25px;
+            height: fit-content;
+        }
+
+        .adm-card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #00b4d8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-adm-group {
+            margin-bottom: 15px;
+        }
+
+        .form-adm-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #a0aec0;
+            font-size: 0.85rem;
+        }
+
+        .form-adm-group input, .form-adm-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: #0f111a;
+            border: 1px solid #23293e;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .form-adm-group input:focus, .form-adm-group select:focus {
+            border-color: #00b4d8;
+        }
+
+        #usuario {
+            text-transform: lowercase;
+        }
+
+        .btn-cadastrar {
+            width: 100%;
+            background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+        .btn-cadastrar:hover {
+            filter: brightness(1.1);
+        }
+
+        .table-container {
+            background-color: #161925;
+            border: 1px solid #23293e;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            color: #00b4d8;
+            padding: 12px;
+            border-bottom: 2px solid #23293e;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            text-align: left;
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #23293e;
+            color: #f0f2f5;
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        .badge {
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-adm { background-color: rgba(0, 180, 216, 0.2); color: #00b4d8; }
+        .badge-estagiario { background-color: rgba(160, 174, 192, 0.2); color: #a0aec0; }
+        
+        .status-tag {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        .status-ativo { color: #4ade80; }
+        .status-inativo { color: #f87171; }
+
+        .actions-flex {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid transparent;
+            background: none;
+            transition: 0.2s;
+        }
+
+        .btn-pwd { background-color: rgba(234, 179, 8, 0.1); color: #facc15; border-color: rgba(234, 179, 8, 0.2); }
+        .btn-pwd:hover { background-color: #facc15; color: #000; }
+
+        .btn-status { background-color: rgba(75, 85, 99, 0.2); color: #d1d5db; border-color: rgba(75, 85, 99, 0.3); }
+        .btn-status:hover { background-color: #4b5563; color: #fff; }
+
+        .btn-del { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
+        .btn-del:hover { background-color: #ef4444; color: #fff; }
+
+        .pwd-form-inline {
+            display: none;
+            margin-top: 8px;
+        }
+        .pwd-form-inline.show {
+            display: flex;
+            gap: 6px;
+        }
+        .pwd-form-inline input {
+            padding: 4px 8px;
+            background-color: #0f111a;
+            border: 1px solid #23293e;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        /* Sidebar Fixa - Alinhamento Seguro */
+        .sidebar {
+            width: 260px;
+            background-color: #0f111a;
+            border-right: 1px solid #1e2235;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px;
+            position: fixed;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 35px; padding-left: 8px; }
+        .logo i { color: #00b4d8; font-size: 1.5rem; }
+        .logo span { font-size: 1.25rem; font-weight: 700; }
+
+        .menu { display: flex; flex-direction: column; gap: 8px; }
+        .menu a {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: #7e8b9b;
+            text-decoration: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .menu a:hover { color: #ffffff; background-color: #161925; }
+        .menu a.active { color: #ffffff; background-color: #00b4d8; font-weight: 600; }
+        .menu a.admin-only { border: 1px dashed rgba(0, 180, 216, 0.3); }
+
+        .user-profile-footer {
+            background-color: #0d0f17;
+            border-top: 1px solid #23293e;
+            padding: 16px;
+            margin: 0 -24px -24px -24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+            color: #ffffff;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .user-details .username {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-details .role {
+            font-size: 0.75rem;
+            color: #6c7a9c;
+            margin-top: 2px;
+        }
+
+        .logout-action {
+            color: #ef4444;
+            font-size: 1.1rem;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        .logout-action:hover {
+            transform: scale(1.1);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            width: calc(100% - 260px);
+            padding: 40px;
+        }
+
+        header {
+            margin-bottom: 35px;
+            border-bottom: 1px solid #1e2235;
+            padding-bottom: 20px;
+        }
+        header h1 { font-size: 1.8rem; margin: 0; }
+        header p { color: #6c7a9c; margin-top: 5px; margin-bottom: 0; }
+
+        .alert-adm {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        .alert-success { background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; }
+        .alert-danger { background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="menu-container">
+            <div class="logo"><i class="fa-solid fa-terminal"></i> <span>TI Suporte</span></div>
+            <nav class="menu">
+                <a href="/dashboard"><i class="fa-solid fa-book"></i> Tutoriais</a>
+                <a href="/aps"><i class="fa-solid fa-wifi"></i> AP's</a>
+                {% if session['usuario_role'] == 'adm' %}
+                <a href="/usuarios" class="active admin-only"><i class="fa-solid fa-users-gear"></i> Painel ADM</a>
+                {% endif %}
+            </nav>
+        </div>
+        <div class="user-profile-footer">
+    <div class="user-avatar">
+        {{ session['usuario_nome'][0] if session['usuario_nome'] else 'U' }}
+    </div>
+    <div class="user-details">
+        <p class="username">{{ session['usuario_nome'] if session['usuario_nome'] else 'Usuário' }}</p>
+        <span class="role">
+            {{ 'Administrador' if session['usuario_role'] == 'adm' else 'Estagiário' }}
+        </span>
+    </div>
+    <a href="/logout" class="logout-action" title="Sair do Sistema">
+        <i class="fa-solid fa-right-from-bracket"></i>
+    </a>
+</div>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h1>Painel do Administrador</h1>
+            <p>Gerencie permissões, altere senhas corporativas e alterne o status de atividade dos colaboradores.</p>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert-adm alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="admin-grid">
+            <div class="adm-card">
+                <h2><i class="fa-solid fa-user-plus"></i> Novo Usuário</h2>
+                <form action="/usuarios" method="POST">
+                    <div class="form-adm-group">
+                        <label for="nome">Nome Completo</label>
+                        <input type="text" id="nome" name="nome" required autocomplete="off">
+                    </div>
+                    <div class="form-adm-group">
+                        <label for="usuario">Login de Acesso</label>
+                        <input type="text" id="usuario" name="usuario" required autocomplete="off">
+                    </div>
+                    <div class="form-adm-group">
+                        <label for="senha">Senha Inicial</label>
+                        <input type="password" id="senha" name="senha" required>
+                    </div>
+                    <div class="form-adm-group">
+                        <label for="nivel">Permissão</label>
+                        <select id="nivel" name="nivel">
+                            <option value="estagiario">Estagiário</option>
+                            <option value="adm">Administrador</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-cadastrar">Salvar</button>
+                </form>
+            </div>
+
+            <div class="table-container">
+                <h2><i class="fa-solid fa-users"></i> Gerenciamento de Contas</h2>
+                <table style="margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th>Colaborador</th>
+                            <th>Acesso</th>
+                            <th>Ações Administrativas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in usuarios %}
+                        <tr>
+                            <td>
+                                {{ user['nome'] }}
+                                <span class="status-tag {% if user['ativo'] == 1 %}status-ativo{% else %}status-inativo{% endif %}">
+                                    • {% if user['ativo'] == 1 %}Ativo{% else %}Inativo{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if user['nivel'] == 'adm' %}badge-adm{% else %}badge-estagiario{% endif %}">
+                                    {{ 'Admin' if user['nivel'] == 'adm' else 'Estagiário' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="actions-flex">
+                                            <button class="btn-action btn-pwd btn-toggle-pwd" data-id="{{ user['id'] if 'id' in user else user[0] }}">
+                                                <i class="fa-solid fa-key"></i> Senha
+                                            </button>
+
+                                            {% if (user['usuario'] if 'usuario' in user else user[1]) != session['usuario_nome'] %}
+                                            <a href="/alternar-status/{{ user['id'] if 'id' in user else user[0] }}" class="btn-action btn-status">
+                                                <i class="fa-solid fa-power-off"></i> {{ 'Inativar' if (user['ativo'] if 'ativo' in user else user[4]) == 1 else 'Ativar' }}
+                                            </a>
+                                            
+                                            <a href="/usuarios/deletar/{{ user['id'] if 'id' in user else user[0] }}" 
+                                            class="action-del" 
+                                            onclick="return confirm('Tem certeza que deseja remover este usuário?')">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+
+                                <form id="form-pwd-{{ user['id'] }}" class="pwd-form-inline" action="/editar-senha-usuario/{{ user['id'] }}" method="POST">
+                                    <input type="text" name="nova_senha" placeholder="Nova senha" required>
+                                    <button type="submit" class="btn-action btn-pwd" style="padding: 4px 8px;">Definir</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const botoesSenha = document.querySelectorAll('.btn-toggle-pwd');
+            
+            botoesSenha.forEach(botao => {
+                botao.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-id');
+                    const form = document.getElementById('form-pwd-' + userId);
+                    if (form) {
+                        form.classList.toggle('show');
+                    }
+                });
+            });
+
+            // Força caixa baixa automática no input de usuário em tempo real
+            const inputUsuario = document.getElementById('usuario');
+            if (inputUsuario) {
+                inputUsuario.addEventListener('input', function() {
+                    this.value = this.value.toLowerCase().replace(/\s+/g, '');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

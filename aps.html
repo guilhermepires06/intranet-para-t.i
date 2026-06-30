@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intranet - Mapeamento de Ativos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body data-role="{{ session.get('usuario_role', 'estagiario') }}">
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i> Infraestrutura Navegação</button>
+
+    <div class="sidebar" id="app-sidebar">
+        <div class="menu-container">
+            <div class="logo"><i class="fa-solid fa-terminal"></i> <span>TI Suporte</span></div>
+            <nav class="menu">
+                <a href="/dashboard"><i class="fa-solid fa-book"></i> Tutoriais</a>
+                <a href="/aps" class="active"><i class="fa-solid fa-wifi"></i> AP's</a>
+                
+                <a href="/avisos">
+                    <i class="fa-solid fa-bullhorn"></i> Mural de Avisos
+                    {% if total_avisos_ativos and total_avisos_ativos > 0 %}
+                    <span class="badge-alerta">{{ total_avisos_ativos }}</span>
+                    {% endif %}
+                </a>
+                
+                {% if session['usuario_role'] == 'adm' %}
+                <a href="/usuarios" class="admin-only"><i class="fa-solid fa-users-gear"></i> Painel ADM</a>
+                {% endif %}
+            </nav>
+        </div>
+        <div class="user-profile-footer">
+            <div class="user-avatar">{{ session['usuario_nome'][0] if session['usuario_nome'] else 'U' }}</div>
+            <div class="user-details">
+                <p class="username">{{ session['usuario_nome'] }}</p>
+                <span class="role">{{ 'Administrador' if session['usuario_role'] == 'adm' else 'Estagiário' }}</span>
+            </div>
+            <a href="/logout" class="logout-action"><i class="fa-solid fa-right-from-bracket"></i></a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header-painel">
+            <div class="title-secao"><h2><i class="fa-solid fa-network-wired"></i> Inventário Técnico de Equipamentos</h2></div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, msg in messages %}<div class="alert alert-{{ category }}">{{ msg }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        {% if session.get('usuario_role') == 'adm' %}
+        <div class="action-bar">
+            <button class="btn btn-primary" onclick="abrirFormCadastro()"><i class="fa-solid fa-list-check"></i> Inserção em Lote (Vários APs)</button>
+            <button class="btn btn-secondary" onclick="toggleForm('form-escola')"><i class="fa-solid fa-school"></i> Adicionar Unidade / Escola</button>
+        </div>
+
+        <div id="form-escola" class="form-cadastro">
+            <h3 style="margin-bottom: 15px; color: #facc15;"><i class="fa-solid fa-folder-plus"></i> Cadastrar Nova Escola</h3>
+            <form action="/adicionar-escola" method="POST">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" name="nome_escola" required placeholder="Ex: CIE 022238 ENOCH GARCIA LEAL" style="flex-grow:1;">
+                    <button type="submit" class="btn btn-primary" style="background: #eab308;"><i class="fa-solid fa-plus"></i> Inserir</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="form-equipamento" class="form-cadastro">
+            <h3 id="form-header-title" style="margin-bottom: 20px; color: #00b4d8;"><i class="fa-solid fa-cubes"></i> Registrar Equipamentos em Lote</h3>
+            <form id="equipment-main-form" action="/aps" method="POST">
+                
+                <div style="max-width: 350px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.8rem; color: #7e8b9b; font-weight: 700; text-transform: uppercase; display:block;">Selecione a Escola Destino</label>
+                    
+                    <input type="text" id="busca-escola-lote" placeholder="🔍 Digite para filtrar as escolas..." 
+                           style="background-color: #0b0d16; border: 1px solid #1e2235; padding: 8px 12px; border-radius: 6px; color: white; font-size: 0.85rem; margin-bottom: 4px;"
+                           oninput="filtrarEscolasNoForm()">
+
+                    <select id="form-select-local" name="local" required>
+                        <option value="" disabled selected>Escolha a unidade operacional...</option>
+                        {% for unidade in unidades %}
+                            {% set item_nome = unidade['nome'] if 'nome' in unidade else unidade[1] %}
+                            <option value="{{ item_nome }}" class="option-unidade">
+                                {{ item_nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="responsive-table-wrapper">
+                    <div class="row-headers">
+                        <div>Nome do AP</div><div>MAC Address</div><div>S/N</div><div>Local Instalação</div><div>Rack</div><div>Switch</div><div>Porta</div><div></div>
+                    </div>
+                    <div id="dynamic-lines-container">
+                        <div class="dynamic-row">
+                            <div><input type="text" id="field-nome" name="nome[]" required autocomplete="off" placeholder="Ex: AP01-TR"></div>
+                            <div><input type="text" id="field-mac" name="mac_address[]" class="input-mac" maxlength="17" required autocomplete="off" placeholder="00:00:00:00:00:00"></div>
+                            <div><input type="text" id="field-sn" name="serial_number[]" class="input-sn" maxlength="14" autocomplete="off" placeholder="Q2XD-W7YF"></div>
+                            <div><input type="text" id="field-localizacao" name="localizacao[]" required autocomplete="off" placeholder="Ex: Sala 01"></div>
+                            <div><input type="text" id="field-rack" name="rack[]" autocomplete="off" placeholder="03"></div>
+                            <div><input type="text" id="field-switch" name="switch[]" autocomplete="off" placeholder="SWH03"></div>
+                            <div><input type="text" id="field-porta" name="porta[]" autocomplete="off" placeholder="08"></div>
+                            <div id="container-btn-delete-row"><button type="button" class="btn-remove-row" onclick="removeRow(this)"><i class="fa-solid fa-trash-can"></i></button></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-add-more-row" class="btn-add-row" onclick="addNewRow()"><i class="fa-solid fa-plus"></i> Adicionar Mais um Equipamento (+)</button>
+                <div style="margin-top:25px; border-top: 1px solid #1e2235; padding-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" id="btn-cancelar-edicao" class="btn btn-cancel" style="display:none;" onclick="resetFormEquipamentos()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+                    <button type="submit" id="btn-submit-form" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Salvar Todos os Equipamentos</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="controls-row">
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="smart-search" placeholder="Pesquisa Inteligente (Busque por Nome, MAC, S/N, Setor ou Escola)..." oninput="executarPesquisaInteligente()">
+            </div>
+            <div class="view-switchers">
+                <button id="view-grid-btn" class="view-btn active" onclick="mudarVisualizacao('grid')"><i class="fa-solid fa-grip"></i> Blocos</button>
+                <button id="view-list-btn" class="view-btn" onclick="mudarVisualizacao('list')"><i class="fa-solid fa-list"></i> Lista</button>
+            </div>
+        </div>
+
+        <div class="layout-split">
+            <div class="escolas-sidebar">
+                <div class="escolas-sidebar-title">Unidades Cadastradas</div>
+                <div class="escolas-scroll-area">
+                    <a href="/aps" class="escola-item {% if not busca %}active{% endif %}"><span><i class="fa-solid fa-border-all"></i> Ver Todas</span></a>
+                    {% for unidade in unidades %}
+                        {% set id_unidade = unidade['id'] if 'id' in unidade else unidade[0] %}
+                        {% set nome_unidade = unidade['nome'] if 'nome' in unidade else unidade[1] %}
+                        {% set total_aps = unidade['total_aps'] if 'total_aps' in unidade else unidade[2] %}
+                        
+                        <div class="escola-item sidebar-school-node {% if busca == nome_unidade %}active{% endif %}">
+                            <a href="/aps?busca={{ nome_unidade }}" style="color:inherit; text-decoration:none; flex-grow:1; display: flex; align-items: center; justify-content: space-between; padding-right: 8px;">
+                                <span>{{ nome_unidade }}</span>
+                                <span style="background-color: #1c2333; color: #00b4d8; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(0, 180, 216, 0.2); font-family: monospace;">
+                                    {{ total_aps if total_aps else 0 }}
+                                </span>
+                            </a>
+                            {% if session['usuario_role'] == 'adm' %}
+                            <button type="button" class="btn-edit-school btn-trigger-edit-school" data-id="{{ id_unidade }}" data-nome="{{ nome_unidade }}" title="Editar Nome">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="aps-display-area">
+                <div class="grid-aps" id="view-grid-container">
+                    {% for ap in aps %}
+                    <div class="card-ap search-item" data-filter="{{ ap.nome }} {{ ap.mac_address }} {{ ap.serial_number }} {{ ap.localizacao }} {{ ap.local }}">
+                        {% if session.get('usuario_role') == 'adm' %}
+                        <div class="card-admin-actions">
+                            <button type="button" class="btn-card-action action-edit btn-editar-ap" data-id="{{ ap['id'] }}"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <a href="/aps/deletar/{{ ap['id'] }}" class="btn-card-action action-del" onclick="return confirm('Excluir Ativo?')"><i class="fa-solid fa-trash-can"></i></a>
+                        </div>
+                        {% endif %}
+                        <div class="card-content">
+                            <div class="card-title"><i class="fa-solid fa-wifi" style="font-size: 1.1rem;"></i> {{ ap.nome }}</div>
+                            <div class="card-subtitle">{{ ap.local }}</div>
+                            <table class="tech-specs">
+                                <tr><td class="label">MAC Address:</td><td class="value">{{ ap.mac_address }}</td></tr>
+                                <tr><td class="label">S/N:</td><td class="value">{{ ap.serial_number if ap.serial_number else '-' }}</td></tr>
+                                <tr><td class="label">Local Instalação:</td><td class="value">{{ ap.localizacao }}</td></tr>
+                                <tr><td class="label">Rack:</td><td class="value">{{ ap.rack if ap.rack else '-' }}</td></tr>
+                                <tr><td class="label">Switch (SW):</td><td class="value">{{ ap.switch if ap.switch else '-' }}</td></tr>
+                                <tr><td class="label">Porta:</td><td class="value">{{ ap.porta if ap.porta else '-' }}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="list-aps-container" id="view-list-container">
+                    <table class="table-moderna">
+                        <thead>
+                            <tr><th>Equipamento</th><th>MAC Address</th><th>S/N</th><th>Instalação</th><th>Rack/SW/P</th>{% if session.get('usuario_role') == 'adm' %}<th>Ações</th>{% endif %}</tr>
+                        </thead>
+                        <tbody>
+                            {% for ap in aps %}
+                            <tr class="search-item" data-filter="{{ ap.nome }} {{ ap.mac_address }} {{ ap.serial_number }} {{ ap.localizacao }} {{ ap.local }}">
+                                <td><span class="ap-main-name">{{ ap.nome }}</span><span class="ap-sub-local">{{ ap.local }}</span></td>
+                                <td><code>{{ ap.mac_address }}</code></td>
+                                <td>{{ ap.serial_number if ap.serial_number else '-' }}</td>
+                                <td>{{ ap.localizacao }}</td>
+                                <td>R:{{ ap.rack if ap.rack else '-' }} | SW:{{ ap.switch if ap.switch else '-' }} | P:{{ ap.porta if ap.porta else '-' }}</td>
+                                {% if session.get('usuario_role') == 'adm' %}
+                                <td>
+                                    <div class="list-admin-actions">
+                                        <button type="button" class="btn-card-action action-edit btn-editar-ap" data-id="{{ ap['id'] }}"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <a href="/aps/deletar/{{ ap['id'] }}" class="btn-card-action action-del" onclick="return confirm('Excluir Ativo?')"><i class="fa-solid fa-trash-can"></i></a>
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-escola">
+        <div class="modal-content">
+            <h3 style="color:#00b4d8; margin-bottom: 15px;"><i class="fa-solid fa-pen-to-square"></i> Renomear Escola</h3>
+            <form id="form-editar-escola-modal" method="POST" action="">
+                <div style="display:flex; flex-direction:column; gap:15px;">
+                    <input type="text" id="modal-input-nome-escola" name="nome_escola" required style="background-color:#0b0d16; border:1px solid #1e2235; padding:12px; border-radius:6px; color:white; text-transform:uppercase;">
+                    <div style="display:flex; justify-content:flex-end; gap:10px;">
+                        <button type="button" class="btn btn-secondary" onclick="fecharModalEditarEscola()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

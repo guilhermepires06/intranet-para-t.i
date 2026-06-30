@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intranet - Central de Tutoriais</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: #090a10; color: #ffffff; min-height: 100vh; display: flex; overflow-x: hidden; }
+        
+        .menu-toggle { display: none; background-color: #0f111a; border: none; color: #00b4d8; padding: 15px 20px; font-size: 1.3rem; width: 100%; text-align: left; position: fixed; top: 0; left: 0; z-index: 3000; border-bottom: 1px solid #1e2235; cursor: pointer; }
+
+        /* SIDEBAR SISTEMA */
+        .sidebar { width: 260px; background-color: #0f111a; border-right: 1px solid #1e2235; height: 100vh; position: fixed; top: 0; left: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 24px; z-index: 2000; transition: transform 0.3s ease; }
+        .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 35px; padding-left: 8px; }
+        .logo i { color: #00b4d8; font-size: 1.5rem; }
+        .logo span { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; }
+        .menu { display: flex; flex-direction: column; gap: 8px; }
+        .menu a { display: flex; align-items: center; gap: 14px; color: #7e8b9b; text-decoration: none; padding: 12px 16px; border-radius: 8px; font-weight: 500; transition: all 0.2s ease; position: relative; }
+        .menu a:hover, .menu a.active { color: #ffffff; background-color: #00b4d8; font-weight: 600; }
+        
+        /* BADGE DE ALERTA DO MURAL DE AVISOS */
+        .badge-alerta {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #ef4444;
+            color: white;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+            animation: pulsoAlerta 2s infinite;
+        }
+        @keyframes pulsoAlerta {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .user-profile-footer { display: flex; align-items: center; gap: 12px; padding-top: 20px; border-top: 1px solid #1e2235; background-color: #0f111a; margin: 0 -24px -24px -24px; padding: 16px; width: calc(100% + 48px); }
+        .user-avatar { width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .user-details { flex-grow: 1; min-width: 0; }
+        .username { font-size: 0.9rem; font-weight: 600; color: #ffffff; margin: 0; }
+        .role { font-size: 0.75rem; color: #7e8b9b; display: block; }
+        .logout-action { color: #ef4444; margin-left: auto; font-size: 1.1rem; text-decoration: none; }
+
+        /* MAIN CONTENT AREA */
+        .main-content { margin-left: 260px; width: calc(100% - 260px); padding: 40px; min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 10; transition: all 0.3s; }
+        header { margin-bottom: 30px; border-bottom: 1px solid #1e2235; padding-bottom: 20px; }
+        header h1 { font-size: 1.8rem; color: #ffffff; margin-bottom: 4px; }
+        header p { color: #7e8b9b; font-size: 0.95rem; }
+
+        .btn { padding: 11px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: white; transition: 0.2s; font-size: 0.9rem; }
+        .btn-primary { background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%); }
+        .btn-cancel { background-color: #3b4561; }
+
+        /* GRID DE TUTORIAIS */
+        .grid-tutoriais { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; width: 100%; }
+        .card-tutorial { background-color: #0f111a; border: 1px solid #1e2235; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; min-height: 240px; position: relative; transition: 0.2s; }
+        .card-tutorial:hover { border-color: #00b4d8; }
+        
+        .card-icon { width: 45px; height: 45px; background-color: rgba(0, 180, 216, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #00b4d8; font-size: 1.3rem; margin-bottom: 15px; border: 1px solid rgba(0, 180, 216, 0.15); }
+        .card-tutorial h3 { font-size: 1.15rem; font-weight: 600; color: #ffffff; margin-bottom: 8px; }
+        .card-tutorial p { color: #6c7a9c; font-size: 0.88rem; line-height: 1.5; margin-bottom: 20px; }
+        
+        .btn-visualizar { width: 100%; text-align: center; background-color: #141724; border: 1px solid #222943; color: #ffffff; padding: 10px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; text-decoration: none; display: block; margin-top: auto; transition: 0.2s; }
+        .btn-visualizar:hover { background-color: #00b4d8; border-color: #00b4d8; }
+
+        .card-admin-actions { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 50; }
+        .btn-card-action { background: none; border: none; cursor: pointer; font-size: 0.95rem; transition: 0.2s; }
+        .action-edit { color: #facc15; }
+        .action-del { color: #ef4444; }
+
+        /* FORMULÁRIO CADASTRO */
+        .form-cadastro { display: none; background-color: #0f111a; border: 1px solid #1e2235; padding: 25px; border-radius: 12px; margin-bottom: 30px; }
+        .form-cadastro.show { display: block; }
+        .form-grid { 
+                            display: grid; 
+                            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+                            gap: 15px; 
+                            margin-bottom: 15px; 
+                        }
+
+                        /* NOVA REGRA: Garante que o container dinâmico ocupe o espaço correto do Grid */
+                        .form-grid .form-group {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 6px;
+                            width: 100%;
+                        }
+        .form-group label { font-size: 0.8rem; color: #7e8b9b; font-weight: 700; text-transform: uppercase; }
+        .form-cadastro input, .form-cadastro select { background-color: #0b0d16; border: 1px solid #1e2235; padding: 11px; border-radius: 6px; color: white; outline: none; font-size: 0.9rem; }
+        .form-cadastro input:focus, .form-cadastro select:focus { border-color: #00b4d8; }
+
+        @media (max-width: 992px) {
+            .menu-toggle { display: block; }
+            .sidebar { transform: translateX(-100%); height: calc(100vh - 54px); top: 54px; }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; width: 100%; padding: 80px 20px 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i> Infraestrutura Navegação</button>
+
+    <div class="sidebar" id="app-sidebar">
+                    <div class="menu-container">
+                        <div class="logo"><i class="fa-solid fa-terminal"></i> <span>TI Suporte</span></div>
+                                        <nav class="menu">
+                                    <a href="/dashboard" class="{{ 'active' if request.path == '/dashboard' }}"><i class="fa-solid fa-book"></i> Tutoriais</a>
+                                    
+                                    <a href="/aps" class="{{ 'active' if request.path == '/aps' }}"><i class="fa-solid fa-wifi"></i> AP's</a>
+                                    
+                                    <a href="/avisos" class="{{ 'active' if request.path == '/avisos' }}">
+                                        <i class="fa-solid fa-bullhorn"></i> Mural de Avisos
+                                        
+                                        {% if total_avisos_ativos and total_avisos_ativos > 0 and request.path != '/avisos' %}
+                                            <span class="badge-alerta">{{ total_avisos_ativos }}</span>
+                                        {% endif %}
+                                    </a>
+                                    
+                                    {% if session['usuario_role'] == 'adm' %}
+                                    <a href="/usuarios" class="admin-only {{ 'active' if request.path == '/usuarios' }}"><i class="fa-solid fa-users-gear"></i> Painel ADM</a>
+                                    {% endif %}
+                                </nav>
+        </div>
+        <div class="user-profile-footer">
+            <div class="user-avatar">{{ session['usuario_nome'][0] if session['usuario_nome'] else 'U' }}</div>
+            <div class="user-details">
+                <p class="username">{{ session['usuario_nome'] }}</p>
+                <span class="role">{{ 'Administrador' if session['usuario_role'] == 'adm' else 'Estagiário' }}</span>
+            </div>
+            <a href="/logout" class="logout-action"><i class="fa-solid fa-right-from-bracket"></i></a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h1>Central de Tutoriais</h1>
+            <p>Selecione o procedimento técnico abaixo para abrir o documento oficial.</p>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}{% for msg in messages %}<div style="padding: 12px; background: rgba(0,180,216,0.15); border: 1px solid #00b4d8; color: #00b4d8; border-radius: 8px; margin-bottom: 20px;">{{ msg }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        {% if session.get('usuario_role') == 'adm' %}
+        <div class="action-bar" style="margin-bottom: 20px;">
+            <button class="btn btn-primary" onclick="document.getElementById('form-novo-tutorial').classList.toggle('show')"><i class="fa-solid fa-plus"></i> Novo Tutorial</button>
+        </div>
+
+        <div id="form-novo-tutorial" class="form-cadastro">
+            <h3 id="form-titulo" style="margin-bottom: 20px; color: #00b4d8;"><i class="fa-solid fa-plus"></i> Publicar Novo Tutorial</h3>
+            <form id="tutorial-form" action="/dashboard" method="POST" enctype="multipart/form-data">
+                <div class="form-grid">
+                    <div class="form-group"><label>Título do Procedimento</label><input type="text" id="input-titulo" name="titulo" required autocomplete="off"></div>
+                    <div class="form-group"><label>Descrição Curta</label><input type="text" id="input-descricao" name="descricao" autocomplete="off"></div>
+                    <div class="form-group">
+                        <label>Ícone Representativo</label>
+                        <select id="input-icone" name="icone">
+                            <option value="fa-file-pdf">📄 Padrão (PDF)</option>
+                            <option value="fa-globe">🌐 Link Externo / Portal Web</option>
+                            <option value="fa-arrow-up-right-from-square">🔗 Link Externo com Seta</option>
+                            <option value="fa-book">📘 Manual / Documentação</option>
+                            <option value="fa-tablet-screen-button">📱 Tablet</option>
+                            <option value="fa-laptop">💻 Chromebook / Laptop</option>
+                            <option value="fa-computer">🖥️ Desktop / Computador</option>
+                            <option value="fa-print">🖨️ Impressora / Copiadora</option>
+                            <option value="fa-server">𗄢 Servidor / Storage</option>
+                            <option value="fa-wifi">📶 Rede / Wireless / AP</option>
+                            <option value="fa-network-wired">🌐 Rede Cabeada / Switch / Rack</option>
+                            <option value="fa-shield-halved">🛡️ Segurança / Firewall / VPN</option>
+                            <option value="fa-key">🔑 Senha / Credenciais / Reset</option>
+                            <option value="fa-gears">⚙️ Configurações / System</option>
+                            <option value="fa-circle-info">ℹ️ Informativo / Avisos Gerais</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-grid" style="margin-bottom: 15px;">
+    <div class="form-group">
+        <label>Origem do Arquivo</label>
+        <select id="tipo_link" name="tipo_link" onchange="alternarOrigemTutorial()">
+            <option value="externo">Link Externo (URL / Blob Azure)</option>
+            <option value="interno">Upload de PDF Interno</option>
+        </select>
+    </div>
+    
+    <div class="form-group" id="container-externo">
+        <label>Link do PDF</label>
+        <input type="text" id="input-link-externo" name="link_externo" placeholder="https://exemplo.com/arquivo.pdf">
+    </div>
+    
+    <div class="form-group" id="container-interno" style="display: none;">
+        <label>Substituir/Selecionar PDF</label>
+        <input type="file" name="file_interno" accept=".pdf">
+    </div>
+</div>
+                <button type="submit" id="btn-submit" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Publicar Tutorial</button>
+                <button type="button" id="btn-cancelar" class="btn btn-cancel" onclick="resetForm()"><i class="fa-solid fa-xmark"></i> Cancelar Edição</button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="grid-tutoriais">
+            {% for tutorial in tutoriais %}
+            <div class="card-tutorial">
+                {% if session.get('usuario_role') == 'adm' %}
+                <div class="card-admin-actions">
+                    <button type="button" class="btn-card-action action-edit btn-editar-tutorial" data-id="{{ tutorial['id'] if 'id' in tutorial else tutorial[0] }}" title="Editar Tutorial">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <a href="/deletar-tutorial/{{ tutorial['id'] if 'id' in tutorial else tutorial[0] }}" class="btn-card-action action-del" onclick="return confirm('Apagar este tutorial?')" title="Excluir">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </a>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <div class="card-icon"><i class="fa-solid {{ tutorial['icone'] }}"></i></div>
+                    <h3>{{ tutorial['titulo'] }}</h3>
+                    <p>{{ tutorial['descricao'] }}</p>
+                </div>
+                
+                <a href="{{ tutorial['link_destino'] }}" target="_blank" class="btn-visualizar">
+                    Abrir Documento
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+ <script>
+        function toggleSidebar() { document.getElementById('app-sidebar').classList.toggle('active'); }
+        
+        function alternarOrigemTutorial() {
+            let tipo = document.getElementById('tipo_link').value;
+            // O segredo das aspas vazias é herdar o comportamento padrão do CSS do Grid
+            document.getElementById('container-externo').style.display = tipo === 'externo' ? '' : 'none';
+            document.getElementById('container-interno').style.display = tipo === 'interno' ? '' : 'none';
+        }
+
+        function resetForm() {
+            document.getElementById('form-titulo').innerHTML = '<i class="fa-solid fa-plus"></i> Publicar Novo Tutorial';
+            document.getElementById('btn-submit').innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Publicar Tutorial';
+            document.getElementById('btn-cancelar').style.display = 'none';
+            document.getElementById('tutorial-form').action = '/dashboard';
+            document.getElementById('tutorial-form').reset();
+            alternarOrigemTutorial();
+        }
+
+       //  Escutador de clique para o botão de editar os Cards
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.addEventListener('click', function(e) {
+                let botaoEditar = e.target.closest('.btn-editar-tutorial');
+                if (!botaoEditar) return;
+                
+                const idTutorial = botaoEditar.getAttribute('data-id');
+                
+                fetch('/get-tutorial/' + idTutorial)
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('form-titulo').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Alterar Dados do Tutorial';
+                        document.getElementById('btn-submit').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Atualizar Tutorial';
+                        document.getElementById('btn-cancelar').style.display = 'inline-flex';
+                        
+                        document.getElementById('tutorial-form').action = '/editar-tutorial/' + idTutorial;
+                        
+                        document.getElementById('input-titulo').value = data.titulo;
+                        document.getElementById('input-descricao').value = data.descricao;
+                        document.getElementById('input-icone').value = data.icone;
+                        document.getElementById('tipo_link').value = data.tipo_link;
+                        
+                        if (data.tipo_link === 'externo') {
+                            document.getElementById('input-link-externo').value = data.link_destino;
+                        } else {
+                            document.getElementById('input-link-externo').value = '';
+                        }
+                        
+                        // CORREÇÃO AQUI: Em vez de mexer nos displays manualmente aqui dentro,
+                        // chamamos a função padrão que o botão "Adicionar" usa!
+                        alternarOrigemTutorial();
+                        
+                        document.getElementById('form-novo-tutorial').classList.add('show');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }).catch(err => console.error("Erro ao carregar tutorial:", err));
+            });
+        });
+    </script>
+</body>
+</html>

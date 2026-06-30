@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intranet - Mural de Avisos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: #090a10; color: #ffffff; min-height: 100vh; display: flex; overflow-x: hidden; }
+        
+        .menu-toggle { display: none; background-color: #0f111a; border: none; color: #00b4d8; padding: 15px 20px; font-size: 1.3rem; width: 100%; text-align: left; position: fixed; top: 0; left: 0; z-index: 3000; border-bottom: 1px solid #1e2235; cursor: pointer; }
+
+        /* SIDEBAR SISTEMA */
+        .sidebar { width: 260px; background-color: #0f111a; border-right: 1px solid #1e2235; height: 100vh; position: fixed; top: 0; left: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 24px; z-index: 2000; transition: transform 0.3s ease; }
+        .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 35px; padding-left: 8px; }
+        .logo i { color: #00b4d8; font-size: 1.5rem; }
+        .logo span { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; }
+        .menu { display: flex; flex-direction: column; gap: 8px; }
+        .menu a { display: flex; align-items: center; gap: 14px; color: #7e8b9b; text-decoration: none; padding: 12px 16px; border-radius: 8px; font-weight: 500; transition: all 0.2s ease; }
+        .menu a:hover, .menu a.active { color: #ffffff; background-color: #00b4d8; font-weight: 600; }
+        
+        .user-profile-footer { display: flex; align-items: center; gap: 12px; padding-top: 20px; border-top: 1px solid #1e2235; background-color: #0f111a; margin: 0 -24px -24px -24px; padding: 16px; width: calc(100% + 48px); }
+        .user-avatar { width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .user-details { flex-grow: 1; min-width: 0; }
+        .username { font-size: 0.9rem; font-weight: 600; color: #ffffff; margin: 0; }
+        .role { font-size: 0.75rem; color: #7e8b9b; display: block; }
+        .logout-action { color: #ef4444; margin-left: auto; font-size: 1.1rem; text-decoration: none; }
+
+        /* MAIN CONTENT */
+        .main-content { margin-left: 260px; width: calc(100% - 260px); padding: 40px; min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 10; transition: all 0.3s; }
+        .header-painel { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #1e2235; padding-bottom: 20px; }
+        .title-secao h2 { font-size: 1.6rem; color: #fff; display: flex; align-items: center; gap: 12px; }
+        .title-secao h2 i { color: #00b4d8; }
+
+        .btn { padding: 11px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: white; transition: 0.2s; font-size: 0.9rem; }
+        .btn-primary { background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%); }
+        .btn-checkin { background-color: #16a34a; font-size: 0.82rem; padding: 8px 14px; margin-top: 15px; display: inline-flex; width: fit-content; border-radius: 6px; }
+        .btn-checkin:hover { background-color: #15803d; }
+        
+        .status-lido { display: inline-flex; align-items: center; gap: 6px; color: #22c55e; font-size: 0.82rem; font-weight: 600; margin-top: 15px; }
+
+        .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 25px; font-weight: 500; background-color: rgba(0, 180, 216, 0.15); border: 1px solid #00b4d8; color: #00b4d8; }
+
+        /* FORMULÁRIO DE CADASTRO */
+        .form-cadastro { display: none; background-color: #0f111a; border: 1px solid #1e2235; padding: 25px; border-radius: 12px; margin-bottom: 25px; width: 100%; }
+        .form-cadastro.show { display: block; }
+        .form-cadastro input, .form-cadastro textarea, .form-cadastro select { background-color: #0b0d16; border: 1px solid #1e2235; padding: 12px; border-radius: 6px; color: white; outline: none; font-size: 0.9rem; width: 100%; }
+
+        /* GRID DE AVISOS */
+        .grid-avisos { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 25px; margin-top: 10px; }
+        .card-aviso { background-color: #0f111a; border: 1px solid #1e2235; border-radius: 12px; padding: 22px; position: relative; transition: 0.2s; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-aviso:hover { border-color: #00b4d8; }
+        .card-aviso.urgente { border-left: 4px solid #ef4444; border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+        
+        .aviso-header { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
+        .aviso-meta { font-size: 0.75rem; color: #6c7a9c; font-weight: 500; }
+        .aviso-titulo { font-size: 1.15rem; font-weight: 600; color: #ffffff; margin-bottom: 10px; }
+        .aviso-corpo { font-size: 0.9rem; color: #94a3b8; line-height: 1.6; white-space: pre-line; margin-bottom: auto; }
+        
+        .btn-del-aviso { position: absolute; top: 20px; right: 20px; color: #ef4444; background: none; border: none; cursor: pointer; font-size: 0.95rem; }
+
+        /* PAINEL DE LEITORES EXCLUSIVO DO ADM */
+        .painel-leitores-adm { margin-top: 15px; border-top: 1px solid #1e2235; padding-top: 12px; font-size: 0.8rem; background-color: #0b0d16; padding: 10px; border-radius: 6px; }
+        .painel-leitores-adm summary { color: #00b4d8; cursor: pointer; font-weight: 600; outline: none; user-select: none; }
+        .lista-usuarios-log { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; color: #94a3b8; max-height: 100px; overflow-y: auto; }
+        .lista-usuarios-log li { display: flex; align-items: center; gap: 6px; }
+        .lista-usuarios-log li i { color: #16a34a; font-size: 0.75rem; }
+
+
+        /* Se não tiver isso no <style> do seu avisos.html, adicione: */
+            .menu a { position: relative; }
+            .badge-alerta {
+                position: absolute;
+                right: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                background-color: #ef4444;
+                color: white;
+                font-size: 0.72rem;
+                font-weight: 700;
+                padding: 2px 7px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+                animation: pulsoAlerta 2s infinite;
+            }
+            @keyframes pulsoAlerta {
+                0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+                70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+            }
+
+        @media (max-width: 992px) {
+            .menu-toggle { display: block; }
+            .sidebar { transform: translateX(-100%); height: calc(100vh - 54px); top: 54px; }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; width: 100%; padding: 80px 20px 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i> Infraestrutura Navegação</button>
+
+    <div class="sidebar" id="app-sidebar">
+        <div class="menu-container">
+            <div class="logo"><i class="fa-solid fa-terminal"></i> <span>TI Suporte</span></div>
+            <nav class="menu">
+                <a href="/dashboard"><i class="fa-solid fa-book"></i> Tutoriais</a>
+                <a href="/aps"><i class="fa-solid fa-wifi"></i> AP's</a>
+                <a href="/avisos" class="active">
+                                <i class="fa-solid fa-bullhorn"></i> Mural de Avisos
+                                {% if total_avisos_ativos and total_avisos_ativos > 0 %}
+                                <span class="badge-alerta">{{ total_avisos_ativos }}</span>
+                                {% endif %}
+                            </a>
+                {% if session['usuario_role'] == 'adm' %}
+                <a href="/usuarios" class="admin-only"><i class="fa-solid fa-users-gear"></i> Painel ADM</a>
+                {% endif %}
+            </nav>
+        </div>
+        <div class="user-profile-footer">
+            <div class="user-avatar">{{ session['usuario_nome'][0] if session['usuario_nome'] else 'U' }}</div>
+            <div class="user-details">
+                <p class="username">{{ session['usuario_nome'] }}</p>
+                <span class="role">{{ 'Administrador' if session['usuario_role'] == 'adm' else 'Estagiário' }}</span>
+            </div>
+            <a href="/logout" class="logout-action"><i class="fa-solid fa-right-from-bracket"></i></a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header-painel">
+            <div class="title-secao"><h2><i class="fa-solid fa-bullhorn"></i> Mural de Comunicados Gerais</h2></div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, msg in messages %}<div class="alert alert-{{ category }}">{{ msg }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        {% if session.get('usuario_role') == 'adm' %}
+        <div class="action-bar" style="margin-bottom: 25px;">
+            <button class="btn btn-primary" onclick="toggleForm('form-novo-aviso')"><i class="fa-solid fa-pen-to-square"></i> Criar Novo Comunicado</button>
+        </div>
+
+        <div id="form-novo-aviso" class="form-cadastro">
+            <h3 style="margin-bottom: 20px; color: #00b4d8;"><i class="fa-solid fa-bullhorn"></i> Publicar Aviso Interno</h3>
+            <form action="/adicionar-aviso" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="font-size: 0.8rem; color: #7e8b9b; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Título do Aviso</label>
+                    <input type="text" name="titulo" placeholder="Ex: Manutenção agendada no Switch Central..." required autocomplete="off">
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: #7e8b9b; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Descrição do Conteúdo</label>
+                    <textarea name="conteudo" rows="4" placeholder="Escreva os detalhes do comunicado completo aqui..." required style="resize: none; font-family: inherit;"></textarea>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                    <div style="width: 180px;">
+                        <label style="font-size: 0.8rem; color: #7e8b9b; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Nível de Prioridade</label>
+                        <select name="prioridade">
+                            <option value="normal">Normal</option>
+                            <option value="urgente">Urgente 🚨</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 22px; margin-left: auto;">Publicar Comunicado</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="grid-avisos">
+            {% if avisos %}
+                {% for aviso in avisos %}
+                <div class="card-aviso {{ 'urgente' if aviso.prioridade == 'urgente' }}">
+                    {% if session.get('usuario_role') == 'adm' %}
+                        <a href="/deletar-aviso/{{ aviso.id }}" class="btn-del-aviso" onclick="return confirm('Remover este comunicado permanentemente?')" title="Excluir Aviso">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </a>
+                    {% endif %}
+                    
+                    <div>
+                        <div class="aviso-header">
+                            <span class="aviso-meta"><i class="fa-regular fa-clock"></i> {{ aviso.data_publicacao }}</span>
+                        </div>
+                        <div class="aviso-titulo">
+                            {% if aviso.prioridade == 'urgente' %}🚨 {% endif %}{{ aviso.titulo }}
+                        </div>
+                        <div class="aviso-corpo">
+                            {{ aviso.conteudo }}
+                        </div>
+                    </div>
+
+                    <div>
+                        {% if aviso.lido_por_mim %}
+                            <div class="status-lido"><i class="fa-solid fa-circle-check"></i> Você confirmou a leitura</div>
+                        {% else %}
+                            <a href="/checkin-aviso/{{ aviso.id }}" class="btn btn-checkin">
+                                <i class="fa-solid fa-eye"></i> Marcar como Lido / Check-in
+                            </a>
+                        {% endif %}
+
+                        {% if session.get('usuario_role') == 'adm' %}
+                        <div class="painel-leitores-adm">
+                            <details>
+                                <summary><i class="fa-solid fa-list-ol"></i> Leituras ({{ aviso.leitores|length }})</summary>
+                                <ul class="lista-usuarios-log">
+                                    {% if aviso.leitores %}
+                                        {% for leitor in aviso.leitores %}
+                                            <li><i class="fa-solid fa-check"></i> {{ leitor }}</li>
+                                        {% endfor %}
+                                    {% else %}
+                                        <li style="color: #4f5b7c; font-style: italic;">Nenhum check-in realizado.</li>
+                                    {% endif %}
+                                </ul>
+                            </details>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="grid-column: 1/-1; text-align: center; color: #4f5b7c; padding: 60px 0;">
+                    <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 12px; color: #1e2235;"></i>
+                    <p style="font-weight: 500;">Nenhum aviso pendente no mural.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() { document.getElementById('app-sidebar').classList.toggle('active'); }
+        function toggleForm(id) { document.getElementById(id).classList.toggle('show'); }
+    </script>
+</body>
+</html>

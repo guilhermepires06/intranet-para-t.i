@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Intranet TI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        /* Reset e Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at center, #111424 0%, #090a10 100%);
+            padding: 20px;
+        }
+
+        /* Container de Login Neon Premium */
+        .login-container {
+            background-color: #141724;
+            border: 1px solid #222943;
+            padding: 45px 35px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 50px rgba(0, 180, 216, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .login-header .icon-box {
+            background: rgba(0, 180, 216, 0.1);
+            width: 70px;
+            height: 70px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px auto;
+            border: 1px solid rgba(0, 180, 216, 0.2);
+            box-shadow: 0 0 20px rgba(0, 180, 216, 0.15);
+        }
+
+        .login-header i {
+            font-size: 2.2rem;
+            color: #00b4d8;
+        }
+
+        .login-header h2 {
+            font-size: 1.75rem;
+            color: #ffffff;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 5px;
+        }
+
+        .login-header p {
+            color: #6c7a9c;
+            font-size: 0.9rem;
+        }
+
+        /* Grupos do Formulário */
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4f5b7c;
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            background-color: #0b0d16;
+            border: 1px solid #222943;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Garante caixa baixa visual imediata no campo de Usuário */
+        #usuario {
+            text-transform: lowercase;
+        }
+
+        .form-group input::placeholder {
+            color: #3b4561;
+        }
+
+        /* Foco Interativo */
+        .form-group input:focus {
+            border-color: #00b4d8;
+            background-color: #0d101d;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
+        }
+
+        .form-group input:focus + i {
+            color: #00b4d8;
+        }
+
+        /* Botão estilizado com transição suave */
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 180, 216, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-login:active {
+            transform: translateY(1px);
+        }
+
+        /* Alertas de Erro */
+        .alert {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="icon-box">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2>Intranet TI</h2>
+            <p>Painel de Autenticação</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert">
+                  <i class="fa-solid fa-circle-exclamation"></i>
+                  {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="/login" method="POST">
+            <div class="form-group">
+                <label for="usuario">Usuário</label>
+                <div class="input-wrapper">
+                    <input type="text" id="usuario" name="usuario" placeholder="seu usuário corporativo" required autocomplete="off">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="senha">Senha</label>
+                <div class="input-wrapper">
+                    <input type="password" id="senha" name="senha" placeholder="••••••••••••" required>
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">Acessar Sistema</button>
+        </form>
+    </div>
+
+    <script>
+        // Força a conversão em caixa baixa em tempo real para evitar erros de digitação
+        document.getElementById('usuario').addEventListener('input', function() {
+            this.value = this.value.toLowerCase();
+        });
+    </script>
+</body>
+</html>
