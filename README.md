@@ -24,3 +24,4 @@ O sistema utiliza relacionamentos foreign-key para garantir integridade e audito
 * `avisos`: Gerencia os comunicados e níveis de criticidade.
 * `logs_leitura`: Registra timestamps e auditoria de leitura de comunicados por usuário.
 * `Blanket_APs`: Tabela principal de gerenciamento de hardware de rede.
+## SENHA INICIAL : admin / 123
